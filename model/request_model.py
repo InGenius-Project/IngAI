@@ -12,3 +12,7 @@ class AnalyzeReport(BaseModel):
     id: UUID
     content: str
     result: str
+
+
+class ChatModel(BaseModel):
+    content: str

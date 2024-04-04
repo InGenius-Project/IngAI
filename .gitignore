@@ -3,3 +3,6 @@
 poetry.lock
 __pycache__/
 .vscode
+test.py
+testapi.py
+testfunc.py

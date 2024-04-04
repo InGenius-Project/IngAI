@@ -1,5 +1,5 @@
 import os
-from typing import Generator, Iterable
+from typing import Generator, Iterable, List
 
 from dotenv import load_dotenv
 from openai import Client, OpenAI
@@ -54,34 +54,35 @@ class OpenAISession:
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
 
-    def chat(self, messages: Iterable[MessageModel], stream=True):
-        chat_bot_messages = []
-        for message in messages:
-            chat_bot_message = MessageModel(role="system", content=message)
-            chat_bot_message.append(chat_bot_messages)
+    @staticmethod
+    def _set_article_facts(article: Article) -> None:
+        crawler = Crawler()
+        # Check if the company is registered in the government database
+        if "會計師事務所" in article.company_name:
+            article.company_name = article.company_name.replace("會計師事務所", "")
+            article.facts.is_company_record_gorvernment = (
+                crawler.check_accounting_firm_exist(article.company_name)
+            )
+        else:
+            article.facts.is_company_record_gorvernment = Crawler.check_company_exist(
+                article.company_name
+            )
 
-        self._post(chat_bot_messages, stream)
-        """
-        Sends a series of messages to the OpenAI chatbot and receives responses.
-
-        Args:
-            messages (Iterable[MessageModel]): A sequence of messages to send to the chatbot.
-            stream (bool, optional): If True, the responses will be streamed as they are received.
-                If False, all responses will be returned at once. Defaults to True.
-
-        Returns:
-            None: If `stream` is True, the responses will be streamed and handled internally.
-            List[ResponseModel]: If `stream` is False, a list of response models will be returned.
-        """
+    def chat(self, message: MessageModel, stream=True) -> Generator[str, None, None]:
+        messages = [
+            MessageModel(
+                role="system", content=config.CHAT_BOT_SYSTEM_LIMITATION_PROMPT
+            ),
+            message,
+        ]
+        response_stream = self._post(messages, stream)
+        return self._read_stream(response_stream)
 
     def analyze(self, article: Article) -> str:
-        # Check if the company is registered in the government database
-        article.facts.is_company_record_gorvernment = Crawler.check_company_exist(
-            article.company_name
-        )
-
+        self._set_article_facts(article)
         # Generate the text from the article
         user_text = config.ANALYZATION_USER_PREFIX_PROMPT + article.generate_text()
+
         response = self._post(
             [
                 MessageModel(role="system", content=config.ANALYZATION_SYSTEM_PROMPT),

@@ -1,1 +1,1 @@
-from service.crawler import *
+from .crawler import *

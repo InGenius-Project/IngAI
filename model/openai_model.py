@@ -1,6 +1,8 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from test_article import TEST_ARTICLE
 
 
 class MessageModel(BaseModel):
@@ -33,10 +35,21 @@ class WorkType(str, Enum):
 
 class Article(BaseModel):
     company_name: str
-    facts: Facts
+    facts: Facts = Field(..., json_exclude=True)
     workType: WorkType
     content: str
     industry: Industry
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "company_name": "鼎榮會計師事務所",
+                "workType": "兼職",
+                "content": TEST_ARTICLE,
+                "industry": "會計服務業",
+            },
+        }
+    }
 
     def generate_text(self):
         return f'{self.facts.generate_text()}\n文章: """\n{self.content}\n"""'

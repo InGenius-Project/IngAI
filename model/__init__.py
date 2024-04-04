@@ -1,2 +1,2 @@
-from model.openai_model import *
-from model.request_model import *
+from .openai_model import *
+from .request_model import *
