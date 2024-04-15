@@ -1,13 +1,14 @@
-import time
-from typing import Dict, Generator, List
+import asyncio
+from typing import Any, Dict, AsyncGenerator, List
 
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from model import Article, ChatModel, MessageModel
+from model import Article, ChatModel, Facts, MessageModel
 from openai_session import OpenAISession
+from test_article import TEST_ARTICLE
 
 app = FastAPI()
 app.add_middleware(
@@ -23,8 +24,8 @@ ai_session = OpenAISession()
 RECORDING_HISTORY: List[MessageModel] = []
 
 
-def steam_text(input_text: str) -> Generator[str, None, None]:
-    text = f"你好嗎, 這是一個測試!!! 這是你的輸入: {input_text}"
+async def steam_text(input_text: str) -> AsyncGenerator[str, None]:
+    text = f"你好嗎, 這是一個測試!!! 這是你的輸入: {input_text}\n以下是長輸出測試:\t{TEST_ARTICLE}"
     text_stream = text.split()
     RECORDING_HISTORY.append(
         MessageModel(
@@ -32,9 +33,9 @@ def steam_text(input_text: str) -> Generator[str, None, None]:
             content=text,
         )
     )
-    for text in text_stream:
-        time.sleep(0.1)
-        yield text
+    for i in text_stream:
+        yield i
+        await asyncio.sleep(0.1)
 
 
 @app.get("/")
@@ -43,7 +44,14 @@ def read_root() -> Dict[str, str]:
 
 
 @app.post("/analyze")
-def analyze(article: Article) -> Dict[str, str]:
+def analyze(article: Article) -> Dict[str, Any]:
+    article = Article(
+        company_name=article.company_name,
+        facts=Facts(),
+        content=article.content,
+        industry=article.industry,
+        workType=article.workType,
+    )
     result = ai_session.analyze(article)
 
     return {
@@ -64,15 +72,29 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     while True:
         data = await websocket.receive_text()
         RECORDING_HISTORY.append(MessageModel(role="user", content=data))
-        for text in steam_text(data):
+        message = ""
+        # for text in ai_session.chat(MessageModel(role="user", content=data)):
+        #     message += text
+        #     await websocket.send_text(text)
+        #
+
+        async for text in steam_text(data):
+            message += text
             await websocket.send_text(text)
+
+        RECORDING_HISTORY.append(
+            MessageModel(
+                role="assistant",
+                content=message,
+            )
+        )
 
 
 @app.post("/chat")
 def chat(chat: ChatModel) -> StreamingResponse:
     # TODO: uncomment this line to burn money
     # return StreamingResponse(
-    #     ai_session.chat(MessageModel(role="user", content=chat.text)),
+    #     ai_session.chat(MessageModel(role="user", content=chat.content)),
     #     media_type="text/plain",
     # )
 

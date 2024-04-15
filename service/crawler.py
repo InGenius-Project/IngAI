@@ -18,6 +18,7 @@ class Crawler:
     def __init__(self) -> None:
         pass
 
+    @ExcpetionHandler.handle_http_excpetion
     @staticmethod
     def check_company_exist(company_name) -> bool:
         api = config.get_gov_gcis_api(company_name)
