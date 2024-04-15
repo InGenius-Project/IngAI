@@ -13,7 +13,7 @@ from openai.types.chat.chat_completion_message_param import (
 )
 
 import config
-from model import Article, MessageModel
+from model import Article, MessageModel, UserResumeInfo
 from service import Crawler
 
 # load env file
@@ -36,13 +36,19 @@ class OpenAISession:
         )
 
     def _post(
-        self, messages: Iterable[MessageModel], stream=False
+        self,
+        messages: Iterable[MessageModel],
+        stream=False,
+        response_format="text",
+        temperature=0.7,
     ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         parsed_messages = self.convert_to_chat_completion(messages)
         response_stream = self._client.chat.completions.create(
             model=self.__model__,
             messages=parsed_messages,
             stream=stream,
+            response_format={"type": response_format},
+            temperature=temperature,
         )
         return response_stream
 
@@ -91,6 +97,25 @@ class OpenAISession:
             stream=False,
         )
         return response.choices[0].message.content
+
+    def generate_area(self, user_info: UserResumeInfo) -> Generator[str, None, None]:
+        user_text = (
+            config.AREA_GENERATE_PREFIX_PROMPT
+            + "\n"
+            + "使用者資料: "
+            + f'"""{user_info.to_string()}"""'
+            + "\n\n"
+            + config.AREA_GENERATE_POSTFIX_PROMPT
+        )
+        response_stream = self._post(
+            [
+                MessageModel(role="user", content=user_text),
+            ],
+            stream=True,
+            response_format="json_object",
+            temperature=1.0,
+        )
+        return self._read_stream(response_stream)
 
     def convert_to_chat_completion(
         self,
