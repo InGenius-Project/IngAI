@@ -1,5 +1,6 @@
 import os
 from typing import Generator, Iterable, List
+import json
 
 from dotenv import load_dotenv
 from openai import Client, OpenAI
@@ -83,6 +84,17 @@ class OpenAISession:
         ]
         response_stream = self._post(messages, stream)
         return self._read_stream(response_stream)
+    
+    def extraction(self,content:str) -> str:
+        all_content = f'"""{content}"""\n'+config.KEYWORD_EXTRACTION_PROMPT
+        response = self._post(
+            [
+                MessageModel(role='user',content=all_content),
+            ],
+            response_format='json_object',
+            stream=False,
+        )
+        return json.loads(response.choices[0].message.content).get('keywords')
 
     def analyze(self, article: Article) -> str:
         self._set_article_facts(article)

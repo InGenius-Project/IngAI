@@ -23,6 +23,9 @@ class UserInfoArea(BaseModel):
     title: str
     content: Optional[str] = "無"
 
+class extractionModel(BaseModel):
+    content: str
+
 
 class UserResumeInfo(BaseModel):
     resume_title: str
