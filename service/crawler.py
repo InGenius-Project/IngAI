@@ -1,3 +1,4 @@
+import json
 import logging
 
 import requests
@@ -69,13 +70,11 @@ class Crawler:
         is_exist = result_list[1].td.text == "1"
         return is_exist
 
-    def get_industry_average_salary(self, industry: str) -> str:
-        url = config.get_salary_api(industry)
-        res: Response = self._session.get(url)
-        if res.status_code != 200:
-            logger.error(
-                f"get_industry_average_salary: cannot retrive response from api {url}"
-            )
-            return "無法取得資料"
-        soup = BeautifulSoup(res.text, "html.parser")
-        return soup.find("td").text
+    def get_industry_average_salary(self, industry: str) -> float:
+        with open("job_average_salary.json", "r", encoding="utf-8") as f:
+            job_average_salary_data = json.load(f)
+
+        for job in job_average_salary_data:
+            if industry.value in job[0]:
+                return job[1]
+        return 0
