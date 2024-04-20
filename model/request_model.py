@@ -23,15 +23,16 @@ class UserInfoArea(BaseModel):
     title: str
     content: Optional[str] = "無"
 
+
 class extractionModel(BaseModel):
     content: str
 
 
 class UserResumeInfo(BaseModel):
-    resume_title: str
+    resumeTitle: str
     areas: list[UserInfoArea]
 
     def to_string(self):
-        return f"ResumeTitle: {self.resume_title}\n" + "\n".join(
+        return f"ResumeTitle: {self.resumeTitle}\n" + "\n".join(
             area.title + ": " + area.content for area in self.areas
         )

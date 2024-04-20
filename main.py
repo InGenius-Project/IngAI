@@ -6,7 +6,14 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from model import Article, ChatModel, Facts, MessageModel, UserResumeInfo ,extractionModel
+from model import (
+    Article,
+    ChatModel,
+    Facts,
+    MessageModel,
+    UserResumeInfo,
+    extractionModel,
+)
 from service import OpenAISession
 from test_article import TEST_ARTICLE
 
@@ -76,10 +83,13 @@ def generate_area(user_info: UserResumeInfo) -> StreamingResponse:
         ai_session.generate_area(user_info),
         media_type="application/json",
     )
+
+
 @app.post("/keywords_extraction")
 def keyword_extraction(text_input: extractionModel) -> list[str]:
     keywords = ai_session.extraction(content=text_input.content)
-    return keywords 
+    return keywords
+
 
 @app.get("/chat_history")
 def get_chat_history() -> List[MessageModel]:
