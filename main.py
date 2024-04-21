@@ -10,6 +10,7 @@ from model import (
     Article,
     ChatModel,
     Facts,
+    GenerateAreaByTitlePost,
     MessageModel,
     UserResumeInfo,
     extractionModel,
@@ -78,16 +79,20 @@ def chat(chat: ChatModel) -> StreamingResponse:
 
 
 @app.post("/generate_area")
-def generate_area(user_info: UserResumeInfo) -> StreamingResponse:
-    return StreamingResponse(
-        ai_session.generate_area(user_info),
-        media_type="application/json",
-    )
+def generate_area(req: UserResumeInfo) -> str:
+    return ai_session.generate_area(req)
+
+
+@app.post("/generate_area_by_title")
+def generate_area_by_title(req: GenerateAreaByTitlePost) -> str:
+    return ai_session.generate_area_by_title(req.UserResumeInfo, req.AreaTitles)
 
 
 @app.post("/keywords_extraction")
 def keyword_extraction(text_input: extractionModel) -> list[str]:
     keywords = ai_session.extraction(content=text_input.content)
+    print(text_input.model_dump_json())
+    print(keywords)
     return keywords
 
 
@@ -103,7 +108,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     while True:
         data = await websocket.receive_text()
         RECORDING_HISTORY.append(MessageModel(role="user", content=data))
-
+        message = ""
         async for text in steam_text(data):
             message += text
             await websocket.send_text(text)
@@ -117,4 +122,4 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8000)

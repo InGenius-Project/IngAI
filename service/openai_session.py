@@ -1,6 +1,7 @@
-import os
-from typing import Generator, Iterable, List
 import json
+import os
+import time
+from typing import Generator, Iterable, List
 
 from dotenv import load_dotenv
 from openai import Client, OpenAI
@@ -42,6 +43,7 @@ class OpenAISession:
         stream=False,
         response_format="text",
         temperature=0.7,
+        max_tokens=1500,
     ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         parsed_messages = self.convert_to_chat_completion(messages)
         response_stream = self._client.chat.completions.create(
@@ -50,6 +52,7 @@ class OpenAISession:
             stream=stream,
             response_format={"type": response_format},
             temperature=temperature,
+            max_tokens=max_tokens,
         )
         return response_stream
 
@@ -84,17 +87,17 @@ class OpenAISession:
         ]
         response_stream = self._post(messages, stream)
         return self._read_stream(response_stream)
-    
-    def extraction(self,content:str) -> str:
-        all_content = f'"""{content}"""\n'+config.KEYWORD_EXTRACTION_PROMPT
+
+    def extraction(self, content: str) -> str:
+        all_content = f'"""{content}"""\n' + config.KEYWORD_EXTRACTION_PROMPT
         response = self._post(
             [
-                MessageModel(role='user',content=all_content),
+                MessageModel(role="user", content=all_content),
             ],
-            response_format='json_object',
+            response_format="json_object",
             stream=False,
         )
-        return json.loads(response.choices[0].message.content).get('keywords')
+        return json.loads(response.choices[0].message.content).get("keywords")
 
     def analyze(self, article: Article) -> str:
         self._set_article_facts(article)
@@ -110,24 +113,89 @@ class OpenAISession:
         )
         return response.choices[0].message.content
 
-    def generate_area(self, user_info: UserResumeInfo) -> Generator[str, None, None]:
-        user_text = (
-            config.AREA_GENERATE_PREFIX_PROMPT
-            + "\n"
-            + "使用者資料: "
-            + f'"""{user_info.to_string()}"""'
-            + "\n\n"
-            + config.AREA_GENERATE_POSTFIX_PROMPT
+    def generate_area(
+        self,
+        user_info: UserResumeInfo,
+    ) -> str:
+        user_text = "使用者資料: \n" + f'"""{user_info.to_string()}"""'
+        print("PROMPT: ", user_text, "\n\n\n")
+
+        messages = (
+            [
+                MessageModel(
+                    role="system",
+                    content=config.AREA_TITLE_GENERATE_PREFIX_PROMPT
+                    + f"至少生成的 AreaTitle 數量: {user_info.AreaNum}\n"
+                    + config.AREA_TITLE_GENERATE_POSTFIX_PROMPT,
+                ),
+                MessageModel(role="user", content=user_text),
+            ]
+            if user_info.TitleOnly
+            else [
+                MessageModel(
+                    role="system",
+                    content=config.AREA_GENERATE_PREFIX_PROMPT
+                    + f"至少生成的 Area 數量: {user_info.AreaNum}\n"
+                    + config.AREA_GENERATE_POSTFIX_PROMPT,
+                ),
+                MessageModel(role="user", content=user_text),
+            ]
         )
+
+        response_stream = self._post(
+            messages,
+            stream=True,
+            response_format="text",
+            temperature=0.7,
+            max_tokens=1500,
+        )
+        response = ""
+        for chunk in response_stream:
+            if chunk.choices[0].delta.content is not None:
+                response += chunk.choices[0].delta.content
+                print(chunk.choices[0].delta.content, end="")
+
+        print("\n\n")
+
+        json_object = json.loads(response)
+        dumped_string = json.dumps(json_object, ensure_ascii=False)
+        print("\n\n\nAfter Parsing:", dumped_string)
+        return dumped_string
+
+    def generate_area_by_title(
+        self, user_info: UserResumeInfo, area_titles: List[str]
+    ) -> str:
+        user_text = (
+            "使用者資料: \n"
+            + f'"""{user_info.to_string()}\nAreaTitles: {", ".join(area_titles)}\n"""'
+        )
+        print("PROMPT: ", user_text, "\n\n\n")
         response_stream = self._post(
             [
+                MessageModel(
+                    role="system",
+                    content=config.AREA_GENERATE_BY_TITLE_PREFIX_PROMPT
+                    + config.AREA_GENERATE_BY_TITLE_POSTFIX_PROMPT,
+                ),
                 MessageModel(role="user", content=user_text),
             ],
             stream=True,
-            response_format="json_object",
-            temperature=1.0,
+            response_format="text",
+            temperature=0.7,
+            max_tokens=1500,
         )
-        return self._read_stream(response_stream)
+        response = ""
+        for chunk in response_stream:
+            if chunk.choices[0].delta.content is not None:
+                response += chunk.choices[0].delta.content
+                print(chunk.choices[0].delta.content, end="")
+
+        print("\n\n")
+
+        json_object = json.loads(response)
+        dumped_string = json.dumps(json_object, ensure_ascii=False)
+        print("\n\n\nAfter Parsing:", dumped_string)
+        return dumped_string
 
     def convert_to_chat_completion(
         self,
