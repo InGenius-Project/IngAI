@@ -1,2 +1,2 @@
-SERVER= 'localhost\SQLEXPRESS'
-DATABASE = 'ChatDatabase'
+SERVER = "localhost\\SQLEXPRESS"
+DATABASE = "ChatDatabase"

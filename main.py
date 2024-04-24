@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, AsyncGenerator, Dict, Generator, List
+from typing import Annotated, Any, AsyncGenerator, Dict, Generator, List
 
 import uvicorn
 from fastapi import Depends, FastAPI, WebSocket
@@ -30,6 +30,7 @@ ai_session = OpenAISession()
 
 RECORDING_HISTORY: List[str] = []
 USER_MESSAGE_RECORD: Dict[str, str] = {}
+chat_service_dep = Annotated[dict, Depends(ChatService)]
 
 
 # NOTE: Test function
@@ -48,13 +49,11 @@ async def steam_text(input_text: str) -> AsyncGenerator[str, None]:
 
 
 def read_chat_response(
-    user_id: str,
-    stream: Generator[str, None, None],
-    chat_service: ChatService = Depends(ChatService),
+    user_id: str, stream: Generator[str, None, None], chat_service: ChatService
 ):
     global USER_MESSAGE_RECORD
     if USER_MESSAGE_RECORD.get(user_id) is None:
-        USER_MESSAGE_RECORD.append(user_id, "")
+        USER_MESSAGE_RECORD[user_id] = ""
 
     for i in stream:
         USER_MESSAGE_RECORD[user_id] += i
@@ -91,10 +90,12 @@ def analyze(article: Article) -> Dict[str, Any]:
 
 @app.post("/chat")
 def chat(
-    chat: ChatModel, user_id: int, chat_service: ChatService = Depends(ChatService)
+    chat: ChatModel, user_id: str, chat_service: chat_service_dep
 ) -> StreamingResponse:
     user_message = MessageModel(role="user", content=chat.content)
-    ai_response = ai_session.chat(user_message)
+    ai_response = read_chat_response(
+        user_id, ai_session.chat(user_message), chat_service
+    )
     chat_service.push_chat(user_id, user_message)
     return StreamingResponse(
         ai_response,

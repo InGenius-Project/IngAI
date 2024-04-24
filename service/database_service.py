@@ -4,17 +4,16 @@ from typing import Annotated, Dict, List, Optional, Tuple, Union
 import pyodbc
 from fastapi import Depends
 from pyodbc import Row
-from singleton_decorator import singleton
 
 import config as con
 from model import ChatRecord, MessageModel
 
 
 class Database:
-    def __init__(self, driver="{SQL Server}") -> None:
+    def __init__(self) -> None:
         self.server = con.SERVER
         self.database = con.DATABASE
-        self.driver = driver
+        self.driver = "{SQL Server}"
         self.conn = None
         self.cursor = None
         self._connect()
@@ -28,9 +27,10 @@ class Database:
         self.cursor = self.conn.cursor()
 
     def insert(self, table: str, data: Dict) -> None:
+        del data["id"]
         key_list = data.keys()
         value_list = [data.get(key) for key in key_list]
-        query = f"INSERT INTO {table} ({','.join(key_list)}) VALUES (?, ?, ?);"
+        query = f"INSERT INTO {table} ({','.join(key_list)}) VALUES ({', '.join(len(key_list)*['?'])});"
         self.cursor.execute(query, tuple(value_list))
 
     def get_by_id(self, table: str, id: str) -> Row:
@@ -56,11 +56,12 @@ class Database:
         expression = "=" if equal else "!="
         select_property_names = (
             "*"
-            if select_properties is None | len(select_properties) == 0
-            else f"({', '.join(select_properties)})"
+            if select_properties is None or len(select_properties) == 0
+            else f"{', '.join(select_properties)}"
         )
 
         query = f"SELECT {select_property_names} FROM {table} WHERE {property_name} {expression} ?;"
+        print(query)
         self.cursor.execute(query, (value,))
         rows = self.cursor.fetchall()
         return rows
@@ -120,10 +121,11 @@ class ChatService:
 
     def push_chat(self, user_id: str, chat: MessageModel) -> bool:
         new_chat_record = ChatRecord(
+            id=None,
             userid=user_id,
             role=chat.role,
             content=chat.content,
-            datetime=datetime.datetime.now(datetime.UTC).isoformat(),
+            datetime=datetime.datetime.now(datetime.UTC),
         )
-        self._db_service.insert(self._table_name, new_chat_record)
+        self._db_service.insert(self._table_name, new_chat_record.model_dump())
         self._db_service.save_changes()
