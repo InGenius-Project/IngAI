@@ -13,7 +13,7 @@ class Database:
     def __init__(self) -> None:
         self.server = con.SERVER
         self.database = con.DATABASE
-        self.driver = "{SQL Server}"
+        self.driver = con.DB_DRIVER
         self.conn = None
         self.cursor = None
         self._connect()
@@ -21,10 +21,45 @@ class Database:
     def _connect(self) -> None:
         if self.conn is not None:
             return
-
+        
         conn_str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};Trusted_Connection=yes"
         self.conn = pyodbc.connect(conn_str)
         self.cursor = self.conn.cursor()
+
+        if not self._database_and_table_exist():
+            self._create_database_and_table()
+
+
+    def _database_exists(self) -> bool:
+        query = f"SELECT COUNT(*) FROM sys.databases WHERE name = '{self.database}'"
+        self.cursor.execute(query)
+        count = self.cursor.fetchone()[0]
+        return count > 0
+    
+    def table_exists(self, table_name: str) -> bool:
+        query = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table_name}'"
+        self.cursor.execute(query)
+        count = self.cursor.fetchone()[0]
+        return count > 0
+
+
+    def _database_and_table_exist(self) -> bool:
+        database_exists = self._database_exists()
+        table_exists = self.table_exists("ChatHistory")
+        return database_exists and table_exists
+    
+    def _table_exists(self, table_name: str) -> bool:
+        query = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ? AND TABLE_SCHEMA = 'dbo'"
+        self.cursor.execute(query, (table_name,))
+        count = self.cursor.fetchone()[0]
+        return count > 0
+    
+    def _create_database_and_table(self) -> None:
+
+        with open("create_database.sql", "r") as file:
+            sql_script = file.read()
+        self.cursor.execute(sql_script)
+        self.conn.commit()
 
     def insert(self, table: str, data: Dict) -> None:
         del data["id"]
