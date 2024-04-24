@@ -10,7 +10,6 @@ class MessageModel(BaseModel):
     role: str
     content: str
 
-
 class Facts(BaseModel):
     work_hour: str = "在台灣, 勞工正常工作時間, 每日不得超過8小時, 每週不得超過40小時"
     base_salary: str = "在台灣, 現行基本工資為月薪新臺幣27470元、時薪新臺幣183元"
