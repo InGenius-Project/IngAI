@@ -37,7 +37,7 @@ class Database:
         if self.conn is None:
             self.connect()
         try:
-            self.cursor.execute(query, params)  
+            self.cursor.execute(query, params) 
             rows = self.cursor.fetchall()
 
             result = []
