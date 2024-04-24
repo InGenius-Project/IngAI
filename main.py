@@ -91,7 +91,6 @@ def generate_area_by_title(req: GenerateAreaByTitlePost) -> str:
 @app.post("/keywords_extraction")
 def keyword_extraction(text_input: extractionModel) -> list[str]:
     keywords = ai_session.extraction(content=text_input.content)
-    print(text_input.model_dump_json())
     print(keywords)
     return keywords
 
