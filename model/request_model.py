@@ -23,6 +23,7 @@ class UserInfoArea(BaseModel):
     title: str
     content: Optional[str] = "無"
 
+
 class extractionModel(BaseModel):
     content: str
 
@@ -35,6 +36,7 @@ class UserResumeInfo(BaseModel):
         return f"ResumeTitle: {self.resume_title}\n" + "\n".join(
             area.title + ": " + area.content for area in self.areas
         )
+
 
 class GenerateAreaByTitlePost(BaseModel):
     UserResumeInfo: UserResumeInfo
