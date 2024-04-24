@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -35,3 +35,7 @@ class UserResumeInfo(BaseModel):
         return f"ResumeTitle: {self.resume_title}\n" + "\n".join(
             area.title + ": " + area.content for area in self.areas
         )
+
+class GenerateAreaByTitlePost(BaseModel):
+    UserResumeInfo: UserResumeInfo
+    AreaTitles: List[str]
