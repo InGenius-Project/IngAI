@@ -15,7 +15,7 @@ from model import (
     UserResumeInfo,
     extractionModel,
 )
-from service import OpenAISession
+from service import Database, OpenAISession
 from test_article import TEST_ARTICLE
 
 app = FastAPI()
@@ -29,7 +29,9 @@ app.add_middleware(
 ai_session = OpenAISession()
 
 
-RECORDING_HISTORY: List[MessageModel] = []
+db = Database()
+
+RECORDING_HISTORY: List[str] = []
 
 
 # NOTE: Test function
@@ -71,9 +73,15 @@ def analyze(article: Article) -> Dict[str, Any]:
 
 
 @app.post("/chat")
-def chat(chat: ChatModel) -> StreamingResponse:
+def chat(chat: ChatModel, user_id: int) -> StreamingResponse:
+    ai_response = "".join(
+        ai_session.chat(MessageModel(role="user", content=chat.content))
+    )
+    db.insert_chat(user_id, role="user", content=chat.content)
+    db.insert_chat(user_id, role="assistant", content=ai_response)
+
     return StreamingResponse(
-        ai_session.chat(MessageModel(role="user", content=chat.content)),
+        ai_response,
         media_type="text/plain",
     )
 
@@ -96,7 +104,14 @@ def keyword_extraction(text_input: extractionModel) -> list[str]:
 
 
 @app.get("/chat_history")
-def get_chat_history() -> List[MessageModel]:
+def get_chat_history(user_id: int) -> List[Dict[str, str]]:
+    rows = db.execute_query(
+        "SELECT role, content FROM ChatHistory WHERE UserID = ?", (user_id)
+    )
+
+    for row in rows:
+        RECORDING_HISTORY.append({"role": row["role"], "content": row["content"]})
+
     return RECORDING_HISTORY
 
 
