@@ -1,4 +1,4 @@
-# Project Title
+# InGenius AI Server
 
 ## Table of Contents
 
