@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 ### Environment
 
-App needs a .env file to connect `openai`
+App needs a `.env` file to connect `openai`
 
 - Example
 
