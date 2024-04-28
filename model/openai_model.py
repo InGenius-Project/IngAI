@@ -10,7 +10,8 @@ class MessageModel(BaseModel):
     role: str
     content: str
 
-class Facts(BaseModel):
+
+class FactsModel(BaseModel):
     work_hour: str = "在台灣, 勞工正常工作時間, 每日不得超過8小時, 每週不得超過40小時"
     base_salary: str = "在台灣, 現行基本工資為月薪新臺幣27470元、時薪新臺幣183元"
     industry_avarage_salary: str = "未知"
@@ -35,11 +36,11 @@ class WorkType(str, Enum):
 
 
 class Article(BaseModel):
-    company_name: str
-    facts: Optional[Facts] = None
-    workType: WorkType
-    content: str
-    industry: Industry
+    CompanyName: str
+    Facts: Optional[FactsModel] = None
+    # workType: WorkType
+    Content: str
+    # Industry: Industry
 
     model_config = {
         "json_schema_extra": {
@@ -53,4 +54,4 @@ class Article(BaseModel):
     }
 
     def generate_text(self):
-        return f'{self.facts.generate_text()}\n文章: """\n{self.content}\n"""'
+        return f'{self.Facts.generate_text()}\n文章: """\n{self.Content}\n"""'

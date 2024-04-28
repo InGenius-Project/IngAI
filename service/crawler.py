@@ -3,6 +3,7 @@ import logging
 
 import requests
 from bs4 import BeautifulSoup
+from icecream import ic
 from requests import Response
 
 import config
@@ -27,6 +28,10 @@ class Crawler:
         if res.status_code != 200:
             logger.error(f"check_company_exist: cannot retrive response from api {api}")
             return False
+
+        if len(res.content) == 0:
+            return False
+
         logger.info(f"check_company_exist: response {res.json()}")
         return len(res.json()) > 0
 

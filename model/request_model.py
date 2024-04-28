@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AnalyzeModel(BaseModel):
@@ -20,8 +20,8 @@ class ChatModel(BaseModel):
 
 
 class UserInfoArea(BaseModel):
-    title: str
-    content: Optional[str] = "無"
+    Title: str = Field(..., case_sensitive=False)
+    Content: Optional[str] = Field("無", case_sensitive=False)
 
 
 class extractionModel(BaseModel):
@@ -29,12 +29,14 @@ class extractionModel(BaseModel):
 
 
 class UserResumeInfo(BaseModel):
-    resume_title: str
-    areas: list[UserInfoArea]
+    TitleOnly: bool = False
+    AreaNum: int = 5
+    ResumeTitle: str = Field(..., case_sensitive=False)
+    Areas: list[UserInfoArea]
 
     def to_string(self):
-        return f"ResumeTitle: {self.resume_title}\n" + "\n".join(
-            area.title + ": " + area.content for area in self.areas
+        return f"ResumeTitle: {self.ResumeTitle}\n" + "\n".join(
+            area.Title + ": " + area.Content for area in self.Areas
         )
 
 
