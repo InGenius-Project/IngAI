@@ -50,3 +50,6 @@ OPENAI_ORG_ID="<Your-OrgId>"
 ```base
 python main.py
 ```
+
+## API Document (Swagger)
+[http://localhost:8000/docs](http://localhost:8000/docs)
