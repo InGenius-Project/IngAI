@@ -7,6 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from icecream import ic
+from uvicorn.config import LOGGING_CONFIG
 
 from model import (
     Article,
@@ -151,4 +152,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 
 if __name__ == "__main__":
+    LOGGING_CONFIG["formatters"]["default"][
+        "fmt"
+    ] = "%(asctime)s %(levelprefix)s %(message)s"
     uvicorn.run(app="main:app", host="0.0.0.0", port=8000)
