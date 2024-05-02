@@ -15,7 +15,7 @@ from openai.types.chat.chat_completion_message_param import (
 )
 
 import config
-from model import Article, MessageModel, UserResumeInfo
+from model import AreaGenInfo, AreaGenType, Article, MessageModel
 from service import Crawler
 
 # load env file
@@ -115,32 +115,32 @@ class OpenAISession:
 
     def generate_area(
         self,
-        user_info: UserResumeInfo,
+        user_info: AreaGenInfo,
     ) -> str:
-        user_text = "使用者資料: \n" + f'"""{user_info.to_string()}"""'
-        ic("PROMPT: ", user_text, "\n\n\n")
+        if user_info.Type == AreaGenType.Resume:
+            user_text = "使用者資料: \n" + f'"""{user_info.to_string()}"""'
+        else:
+            user_text = "公司資料: \n" + f'"""{user_info.to_string()}"""'
 
-        messages = (
-            [
-                MessageModel(
-                    role="system",
-                    content=config.AREA_TITLE_GENERATE_PREFIX_PROMPT
-                    + f"至少生成的 AreaTitle 數量: {user_info.AreaNum}\n"
-                    + config.AREA_TITLE_GENERATE_POSTFIX_PROMPT,
-                ),
-                MessageModel(role="user", content=user_text),
-            ]
-            if user_info.TitleOnly
-            else [
-                MessageModel(
-                    role="system",
-                    content=config.AREA_GENERATE_PREFIX_PROMPT
-                    + f"至少生成的 Area 數量: {user_info.AreaNum}\n"
-                    + config.AREA_GENERATE_POSTFIX_PROMPT,
-                ),
-                MessageModel(role="user", content=user_text),
-            ]
-        )
+        match user_info.Type:
+            case AreaGenType.Resume:
+                system_prompt = config.RESUME_AREA_GEN_SYS_PROMPT(
+                    user_info.AreaNum, user_info.TitleOnly
+                )
+            case AreaGenType.Recruitment:
+                system_prompt = config.RECRUITMENT_AREA_GEN_SYS_PROMPT(
+                    user_info.AreaNum, user_info.TitleOnly
+                )
+
+        ic("Request: ", user_text, "\n\n\n")
+
+        messages = [
+            MessageModel(
+                role="system",
+                content=system_prompt,
+            ),
+            MessageModel(role="user", content=user_text),
+        ]
 
         response_stream = self._post(
             messages,
@@ -158,19 +158,36 @@ class OpenAISession:
         return json_object
 
     def generate_area_by_title(
-        self, user_info: UserResumeInfo, area_titles: List[str]
+        self, user_info: AreaGenInfo, area_titles: List[str]
     ) -> Any:
-        user_text = (
-            "使用者資料: \n"
-            + f'"""{user_info.to_string()}\nAreaTitles: {", ".join(area_titles)}\n"""'
-        )
-        print("PROMPT: ", user_text, "\n\n\n")
+        if user_info.Type == AreaGenType.Resume:
+            user_text = (
+                "使用者資料: \n"
+                + f'"""{user_info.to_string()}\nAreaTitles: {", ".join(area_titles)}\n"""'
+            )
+        else:
+            user_text = (
+                "公司資料: \n"
+                + f'"""{user_info.to_string()}\nAreaTitles: {", ".join(area_titles)}\n"""'
+            )
+
+        match user_info.Type:
+            case AreaGenType.Resume:
+                system_prompt = config.RESUME_AREA_GEN_SYS_PROMPT(
+                    user_info.AreaNum, user_info.TitleOnly
+                )
+            case AreaGenType.Recruitment:
+                system_prompt = config.RECRUITMENT_AREA_GEN_SYS_PROMPT(
+                    user_info.AreaNum, user_info.TitleOnly, True
+                )
+
+        ic("Request: ", user_text, "\n\n\n")
+
         response_stream = self._post(
             [
                 MessageModel(
                     role="system",
-                    content=config.AREA_GENERATE_BY_TITLE_PREFIX_PROMPT
-                    + config.AREA_GENERATE_BY_TITLE_POSTFIX_PROMPT,
+                    content=system_prompt,
                 ),
                 MessageModel(role="user", content=user_text),
             ],

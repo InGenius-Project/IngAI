@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 
@@ -28,18 +29,24 @@ class extractionModel(BaseModel):
     content: str
 
 
-class UserResumeInfo(BaseModel):
+class AreaGenType(Enum):
+    Resume = 0
+    Recruitment = 1
+
+
+class AreaGenInfo(BaseModel):
     TitleOnly: bool = False
     AreaNum: int = 5
-    ResumeTitle: str = Field(..., case_sensitive=False)
+    Title: str = Field(..., case_sensitive=False)
     Areas: list[UserInfoArea]
+    Type: AreaGenType
 
     def to_string(self):
-        return f"ResumeTitle: {self.ResumeTitle}\n" + "\n".join(
+        return f"Title: {self.Title}\n" + "\n".join(
             area.Title + ": " + area.Content for area in self.Areas
         )
 
 
 class GenerateAreaByTitlePost(BaseModel):
-    UserResumeInfo: UserResumeInfo
+    UserInfo: AreaGenInfo
     AreaTitles: List[str]
