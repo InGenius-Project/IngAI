@@ -131,26 +131,6 @@ def get_chat_history(
     return chat_service.get_user_chat(user_id)
 
 
-@DeprecationWarning
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
-    await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        RECORDING_HISTORY.append(MessageModel(role="user", content=data))
-        message = ""
-        async for text in steam_text(data):
-            message += text
-            await websocket.send_text(text)
-
-        RECORDING_HISTORY.append(
-            MessageModel(
-                role="assistant",
-                content=message,
-            )
-        )
-
-
 if __name__ == "__main__":
     LOGGING_CONFIG["formatters"]["default"][
         "fmt"
