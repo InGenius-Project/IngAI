@@ -1,6 +1,6 @@
 .gitignore
 .git
 .venv
-__pycache__
+__pycache__/
 .vscode
 poetry.lock

@@ -1,7 +1,7 @@
 FROM python:3.11.9-alpine3.19
 
-WORKDIR /app
 COPY . /app
+WORKDIR /app
 RUN apk update
 RUN apk add gcc libc-dev g++ libffi-dev libxml2 unixodbc-dev
 RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
