@@ -3,17 +3,23 @@ from typing import Annotated, Dict, List, Optional, Tuple, Union
 
 import pyodbc
 from fastapi import Depends
+from dotenv import load_dotenv
 from pyodbc import Row
+import os
 
 import config as con
 from model import ChatRecord, MessageModel
 
 
+load_dotenv()
+
 class Database:
     def __init__(self) -> None:
-        self.server = con.SERVER
-        self.database = con.DATABASE
-        self.driver = con.DB_DRIVER
+        self.server = os.getenv("SERVER")
+        self.database = os.getenv("DATABSE")
+        self.driver = "{SQL Server}"
+        self.username = os.getenv("USER_ID")
+        self.password = os.getenv("PASSWORD")
         self.conn = None
         self.cursor = None
         self._connect()
@@ -22,7 +28,7 @@ class Database:
         if self.conn is not None:
             return
         
-        conn_str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};Trusted_Connection=yes"
+        conn_str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.username};PASSWORD={self.password}Trusted_Connection=yes"
         self.conn = pyodbc.connect(conn_str)
         self.cursor = self.conn.cursor()
 
