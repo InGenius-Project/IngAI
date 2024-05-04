@@ -1,23 +1,23 @@
 import datetime
+import os
 from typing import Annotated, Dict, List, Optional, Tuple, Union
 
 import pyodbc
-from fastapi import Depends
 from dotenv import load_dotenv
+from fastapi import Depends
 from pyodbc import Row
-import os
 
 import config as con
 from model import ChatRecord, MessageModel
 
-
 load_dotenv()
+
 
 class Database:
     def __init__(self) -> None:
         self.server = os.getenv("SERVER")
         self.database = os.getenv("DATABSE")
-        self.driver = "{SQL Server}"
+        self.driver = os.getenv("DRIVER")
         self.username = os.getenv("USER_ID")
         self.password = os.getenv("PASSWORD")
         self.conn = None
@@ -27,7 +27,7 @@ class Database:
     def _connect(self) -> None:
         if self.conn is not None:
             return
-        
+
         conn_str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.username};PASSWORD={self.password}Trusted_Connection=yes"
         self.conn = pyodbc.connect(conn_str)
         self.cursor = self.conn.cursor()
@@ -35,31 +35,29 @@ class Database:
         if not self._database_and_table_exist():
             self._create_database_and_table()
 
-
     def _database_exists(self) -> bool:
         query = f"SELECT COUNT(*) FROM sys.databases WHERE name = '{self.database}'"
         self.cursor.execute(query)
         count = self.cursor.fetchone()[0]
         return count > 0
-    
+
     def table_exists(self, table_name: str) -> bool:
         query = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table_name}'"
         self.cursor.execute(query)
         count = self.cursor.fetchone()[0]
         return count > 0
 
-
     def _database_and_table_exist(self) -> bool:
         database_exists = self._database_exists()
         table_exists = self.table_exists("ChatHistory")
         return database_exists and table_exists
-    
+
     def _table_exists(self, table_name: str) -> bool:
         query = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ? AND TABLE_SCHEMA = 'dbo'"
         self.cursor.execute(query, (table_name,))
         count = self.cursor.fetchone()[0]
         return count > 0
-    
+
     def _create_database_and_table(self) -> None:
 
         with open("create_database.sql", "r") as file:
