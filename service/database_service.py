@@ -2,25 +2,22 @@ import datetime
 import os
 from typing import Annotated, Dict, List, Optional, Tuple, Union
 
+import config as con
 import pyodbc
 from dotenv import load_dotenv
 from fastapi import Depends
-from pyodbc import Row
-
-import config as con
 from model import ChatRecord, MessageModel
+from pyodbc import Row
 
 load_dotenv()
 
 
 class Database:
     def __init__(self) -> None:
-        self.server = os.getenv("SERVER")
-        self.database = os.getenv("DATABSE")
         self.driver = os.getenv("DRIVER")
-        self.username = os.getenv("USER_ID")
-        self.password = os.getenv("PASSWORD")
+        self._connection_str = os.getenv("CONNECT_STRING")
         self.conn = None
+        self.database = "ChatDatabase"
         self.cursor = None
         self._connect()
 
@@ -28,7 +25,7 @@ class Database:
         if self.conn is not None:
             return
 
-        conn_str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.username};PASSWORD={self.password}Trusted_Connection=yes"
+        conn_str = f"DRIVER={self.driver};{self._connection_str}"
         self.conn = pyodbc.connect(conn_str)
         self.cursor = self.conn.cursor()
 
@@ -59,8 +56,7 @@ class Database:
         return count > 0
 
     def _create_database_and_table(self) -> None:
-
-        with open("create_database.sql", "r") as file:
+        with open("./scripts/create_database.sql", "r") as file:
             sql_script = file.read()
         self.cursor.execute(sql_script)
         self.conn.commit()
