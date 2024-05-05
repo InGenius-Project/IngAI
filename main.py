@@ -66,6 +66,7 @@ def read_chat_response(
         role="assistant", content=USER_MESSAGE_RECORD.get(user_id)
     )
     chat_service.push_chat(user_id, ai_message)
+    USER_MESSAGE_RECORD[user_id] = ""
 
 
 @app.get("/")
