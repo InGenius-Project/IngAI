@@ -2,12 +2,13 @@ import datetime
 import os
 from typing import Annotated, Dict, List, Optional, Tuple, Union
 
-import config as con
 import pyodbc
 from dotenv import load_dotenv
 from fastapi import Depends
-from model import ChatRecord, MessageModel
 from pyodbc import Row
+
+import config as con
+from model import ChatRecord, MessageModel
 
 load_dotenv()
 
@@ -19,7 +20,23 @@ class Database:
         self.conn = None
         self.database = "ChatDatabase"
         self.cursor = None
+        self._preconnect()
         self._connect()
+
+    def _preconnect(self) -> None:
+        if self.conn is not None:
+            return
+        connection_str = os.getenv("PRE_CONNECT_STRING")
+        conn_str = f"DRIVER={self.driver};{connection_str}"
+        self.conn = pyodbc.connect(conn_str)
+        self.cursor = self.conn.cursor()
+
+        if not self._database_and_table_exist():
+            self._create_database_and_table()
+
+        self.conn.close()
+
+        self.conn = None
 
     def _connect(self) -> None:
         if self.conn is not None:
@@ -28,9 +45,6 @@ class Database:
         conn_str = f"DRIVER={self.driver};{self._connection_str}"
         self.conn = pyodbc.connect(conn_str)
         self.cursor = self.conn.cursor()
-
-        if not self._database_and_table_exist():
-            self._create_database_and_table()
 
     def _database_exists(self) -> bool:
         query = f"SELECT COUNT(*) FROM sys.databases WHERE name = '{self.database}'"

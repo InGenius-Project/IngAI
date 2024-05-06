@@ -7,8 +7,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from icecream import ic
-from uvicorn.config import LOGGING_CONFIG
-
 from model import (
     AreaGenInfo,
     Article,
@@ -20,6 +18,7 @@ from model import (
 )
 from service import ChatService, OpenAISession
 from test_article import TEST_ARTICLE
+from uvicorn.config import LOGGING_CONFIG
 
 app = FastAPI()
 app.add_middleware(
