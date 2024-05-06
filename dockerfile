@@ -4,14 +4,7 @@ COPY . /app
 WORKDIR /app
 RUN apk update
 RUN apk --no-cache add curl gnupg
-
-#Download the desired package(s)
-RUN curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.3.1-1_amd64.apk
-RUN curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/mssql-tools18_18.3.1.1-1_amd64.apk
-
-#(Optional) Verify signature, if 'gpg' is missing install it using 'apk add gnupg':
-RUN curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.3.1-1_amd64.sig
-RUN curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/mssql-tools18_18.3.1.1-1_amd64.sig
+COPY "mssql-bundle/*" .
 
 RUN curl https://packages.microsoft.com/keys/microsoft.asc  | gpg --import -
 RUN gpg --verify msodbcsql18_18.3.3.1-1_amd64.sig msodbcsql18_18.3.3.1-1_amd64.apk
